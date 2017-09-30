@@ -1,5 +1,6 @@
 import os
 from static.User import User
+import webbrowser
 import datetime
 import pytz
 from flask import Flask, request, render_template, url_for, jsonify
@@ -15,7 +16,6 @@ database = DB(app.root_path)
 app.debug = True
 app.secret_key = 'development'
 oauth = OAuth(app)
-
 google = oauth.remote_app(
     'google',
     consumer_key=os.environ.get('GOOGLE_ID'),
@@ -32,12 +32,9 @@ google = oauth.remote_app(
 
 currentUser = User("", "", "")
 
-
 @app.route('/')
 def index():
-    if isLoggedIn():
-        return render_template('index.html')
-    return redirect(url_for('login'))
+    return render_template('index.html')
 
 
 @app.route('/login')
@@ -64,20 +61,10 @@ def authorized():
             request.args['error_description']
         )
     session['google_token'] = (resp['access_token'], '')
-    _sess = session['google_token']
-    # TRANSFER FROM PHONE TO MIRROR WILL HAVE TO HAPPEN HERE
-    # redirect(url_for('transfersession', sess=_sess))
-    # HOPE THIS ^ WORKS WILL TEST AT HOME
     _me = google.get("https://www.googleapis.com/plus/v1/people/me").data
     currentUser.name = _me["displayName"]
     currentUser.email = _me["emails"][0]["value"]
-    return redirect(url_for("index"))
-
-
-@app.route('/session/string:<sess>', methods=['POST','GET'])
-def transfersession(sess):
-    session['google_token'] = sess
-    return redirect(url_for('index'))
+    return redirect(url_for("enterRegistration"))
 
 
 @google.tokengetter
@@ -132,7 +119,7 @@ def getEvents():
 
 
 @app.route('/register', methods=['POST'])
-def getPreferences():
+def preferences():
     content = request.get_json(force=True)
     try:
         database.addProfile(content)

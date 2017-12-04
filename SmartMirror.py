@@ -5,7 +5,9 @@ import webbrowser
 from static.User import User
 from facialAuth import Facial
 import datetime
+import cv2
 import pytz
+import shutil
 from flask import Flask, request, render_template, url_for, jsonify
 from db import DB
 from flask_oauthlib.client import OAuth, session, redirect
@@ -146,9 +148,7 @@ def getPreferences():
         face_recognition = Facial(app.root_path)
         face_recognition.captureImage(currentUser.email)
         print("About to authenticate")
-        face_recognition.facial_authenticate()
-        print("Authenticated")
-        webbrowser.open_new_tab(getIP() + ":5000/mirror/" + currentUser.email)
+        face_recognition.facial_authenticate(cv2.imread("Images/"+currentUser.email+".jpg"))
     except BadRequest as e:
         return Response("Error: " + e.description, status=400)
     # if facialAuth.captureImage(currentUser.email):
@@ -220,21 +220,14 @@ def mirror(email):
 
 @app.route('/nuke', methods=['GET'])
 def nuke():
+    shutil.rmtree("Images")
+    os.makedirs("Images")
     database.deleteAll()
     return Response("BOOM, DB is gone", status=200)
 
 
 def getIP():
-    region = os.environ.get('REGION')
-    ip = None
-    if region == "JOSH":
-        ip = "172.20.10.8"
-    elif region == "ANDREW":
-        ip = "172.20.10.3"
-    else:
-        ip = "127.0.0.1"
-    print("The IP address is: " + ip)
-    return ip
+    return "0.0.0.0"
 
 
 if __name__ == '__main__':
